@@ -1,0 +1,9 @@
+#!/bin/bash
+if [ -z "${1}" ]; then 
+    echo "No arguments provided"
+elif [ $1 == "build" ]; then
+    docker build -t gba-builder .
+    docker run --mount type=bind,src=.,dst=/app gba-builder
+elif [ $1 == "clean" ]; then
+    rm build/* rom/*
+fi
