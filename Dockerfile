@@ -12,7 +12,6 @@ RUN echo "[dkp-libs]" >> /etc/pacman.conf
 RUN echo "Server = https://pkg.devkitpro.org/packages" >> /etc/pacman.conf
 RUN echo "[dkp-linux]" >> /etc/pacman.conf
 RUN echo "Server = https://pkg.devkitpro.org/packages/linux/x86_64/" >> /etc/pacman.conf
-RUN pacman -Syu base-devel gba-dev --noconfirm
+RUN pacman -Syu base-devel gba-dev python --noconfirm
 WORKDIR /app
-# COPY . .
-CMD make
+CMD ./make.sh
