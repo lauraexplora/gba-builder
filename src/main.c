@@ -15,7 +15,7 @@
 #include "soundbank.h"
 #include "soundbank_bin.h"
 
-extern const uint8_t *template_combined_psg[];
+extern const uint8_t *starlight_brigade_psg[];
 
 void gbt_sync_to_maxmod(void)
 {
@@ -84,9 +84,9 @@ int main(int argc, char *argv[])
     mmSetModuleVolume(1024 / 4);
 
     // Start both songs
-    gbt_play(template_combined_psg, -1);
+    gbt_play(starlight_brigade_psg, -1);
     gbt_loop(1);
-    mmStart(MOD_TEMPLATE_COMBINED_DMA, MM_PLAY_LOOP);
+    mmStart(MOD_STARLIGHT_BRIGADE_DMA, MM_PLAY_LOOP);
 
     while (1)
         VBlankIntrWait();
