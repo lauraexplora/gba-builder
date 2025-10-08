@@ -63,6 +63,11 @@ void move_star(struct Star * s, int dist)
     s->y = s->y + dist * sin(s->dir);
 }
 
+bool star_oob(struct Star * s) {
+    // TODO: include stars that have become "lodged" in image
+    return s->x > 240 || s->y > 160 || s->x < 0 || s->y < 0;
+}
+
 struct Star * stars[20];
 
 void gbt_sync_to_maxmod(void)
@@ -121,15 +126,19 @@ void vbl_handler(void)
 
     int i;
     for (i = 0; i < 20; i++) {
+
+        // Move star (while retaining previous position)
         int sx = stars[i]->x;
         int sy = stars[i]->y;
         move_star(stars[i], 3);
-        // Recreate stars that have moved off the screen
-        if (stars[i]->x > 240 || stars[i]->y > 160 || stars[i]->x < 0 || stars[i]->y < 0) {
+
+        // Recreate stars that have moved out of bounds
+        if (star_oob(stars[i])) {
             free(stars[i]);
             stars[i] = create_star();
         }
-        // Display star
+
+        // Display star and erase previous position
         m3_mem[sy][sx]= CLR_BLACK;
         m3_mem[stars[i]->y][stars[i]->x]= stars[i]->clr;
     }
