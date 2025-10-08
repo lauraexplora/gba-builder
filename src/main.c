@@ -57,13 +57,6 @@ struct Star * create_star(void)
     return s;
 }
 
-
-
-void display_star(struct Star * s)
-{
-    m3_mem[s->y][s->x]= s->clr;
-}
-
 void move_star(struct Star * s, int dist)
 {
     s->x = s->x + dist * cos(s->dir);
@@ -125,16 +118,20 @@ void vbl_handler(void)
     mmFrame();
     gbt_sync_to_maxmod();
 
-    clear_screen(CLR_BLACK);
 
     int i;
     for (i = 0; i < 20; i++) {
+        int sx = stars[i]->x;
+        int sy = stars[i]->y;
         move_star(stars[i], 3);
+        // Recreate stars that have moved off the screen
         if (stars[i]->x > 240 || stars[i]->y > 160 || stars[i]->x < 0 || stars[i]->y < 0) {
             free(stars[i]);
             stars[i] = create_star();
         }
-        display_star(stars[i]);
+        // Display star
+        m3_mem[sy][sx]= CLR_BLACK;
+        m3_mem[stars[i]->y][stars[i]->x]= stars[i]->clr;
     }
 
     // Print some debug information
