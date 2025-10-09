@@ -24,7 +24,7 @@
 extern const uint8_t *starlight_brigade_psg[];
 struct Star {
     int x, y, z, clr;
-    float dir;
+    float dSin, dCos;
 };
 
 #define VCOUNT *(volatile u16*)0x4000006
@@ -44,23 +44,25 @@ bool clr_flag = false;
 struct Star * create_star(void)
 {
     struct Star *s = malloc (sizeof (struct Star));
-    s->x = RAND(240);
-    s->y = RAND(160);
+    s->x = RAND(240) - 1;
+    s->y = RAND(160) - 1;
     // s->z = RAND(3);
 
-    // s->clr = clr_flag ? RGB15(205,205,205) : CLR_WHITE;
-    s->clr = CLR_WHITE;
+    s->clr = clr_flag ? RGB15(205,205,205) : CLR_WHITE;
+    // s->clr = CLR_WHITE;
     clr_flag = !clr_flag;
 
-    s->dir = atan2f(s->y - 79, s->x - 119);
+    float dir = atan2f(s->y - 79, s->x - 119);
+    s->dSin = sin(dir);
+    s->dCos = cos(dir);
 
     return s;
 }
 
 void move_star(struct Star * s, int dist)
 {
-    s->x = s->x + dist * cos(s->dir);
-    s->y = s->y + dist * sin(s->dir);
+    s->x = s->x + dist * s->dCos;
+    s->y = s->y + dist * s->dSin;
 }
 
 bool star_oob(struct Star * s) {
@@ -130,27 +132,29 @@ void vbl_handler(void)
         // Move star (while retaining previous position)
         int sx = stars[i]->x;
         int sy = stars[i]->y;
-        move_star(stars[i], 3);
 
         // Recreate stars that have moved out of bounds
         if (star_oob(stars[i])) {
             free(stars[i]);
             stars[i] = create_star();
+        } else {
+            // Erase current position
+            m3_mem[sy][sx]= CLR_BLACK;
         }
 
-        // Display star and erase previous position
-        m3_mem[sy][sx]= CLR_BLACK;
+        // Display star at new position
+        move_star(stars[i], 3);
         m3_mem[stars[i]->y][stars[i]->x]= stars[i]->clr;
     }
 
     // Print some debug information
-    // int order, row, tick;
-    // gbt_get_position(&order, &row, &tick);
-    // iprintf("(%s) %d %2d %d | (%s) %d %2d %d\n",
-    //         gbt_is_playing() ? "ON" : "OFF",
-    //         order, row, tick,
-    //         mmActive() ? "ON" : "OFF",
-    //         mmGetPosition(), mmGetPositionRow(), mmGetPositionTick());
+    int order, row, tick;
+    gbt_get_position(&order, &row, &tick);
+    iprintf("(%s) %d %2d %d | (%s) %d %2d %d\n",
+            gbt_is_playing() ? "ON" : "OFF",
+            order, row, tick,
+            mmActive() ? "ON" : "OFF",
+            mmGetPosition(), mmGetPositionRow(), mmGetPositionTick());
 }
 
 s32 RAND(s32 Value)
@@ -170,9 +174,9 @@ int main(int argc, char *argv[])
     irqEnable(IRQ_VBLANK);
 
     // Initialize maxmod with soundbank and 4 channels
-    // mmInitDefault((mm_addr)soundbank_bin, 4);
+    mmInitDefault((mm_addr)soundbank_bin, 4);
     // PSG channels have 1/4th of the range of DMA channels
-    // mmSetModuleVolume(1024 / 4);
+    mmSetModuleVolume(1024 / 4);
 
     // Draw some dots on the screen
     REG_DISPCNT= DCNT_MODE3 | DCNT_BG2;
@@ -183,9 +187,11 @@ int main(int argc, char *argv[])
     }
 
     // Start both songs
-    // gbt_play(starlight_brigade_psg, -1);
-    // gbt_loop(1);
-    // mmStart(MOD_STARLIGHT_BRIGADE_DMA, MM_PLAY_LOOP);
+    gbt_play(starlight_brigade_psg, -1);
+    gbt_loop(1);
+    mmStart(MOD_STARLIGHT_BRIGADE_DMA, MM_PLAY_LOOP);
+
+    clear_screen(CLR_BLACK); // Why is this needed?
 
     while (1) {
         VBlankIntrWait();
