@@ -40,6 +40,7 @@ typedef COLOR       M3LINE[M3_WIDTH];
 // m3_mem is a matrix; m3_mem[y][x] is pixel (x,y)
 #define m3_mem    ((M3LINE*)MEM_VRAM)
 
+#define STAR_SPEED 3
 bool clr_flag = false;
 struct Star * create_star(void)
 {
@@ -59,15 +60,15 @@ struct Star * create_star(void)
     return s;
 }
 
-void move_star(struct Star * s, int dist)
+void move_star(struct Star * s)
 {
-    s->x = s->x + dist * s->dCos;
-    s->y = s->y + dist * s->dSin;
+    s->x = s->x + STAR_SPEED * s->dCos;
+    s->y = s->y + STAR_SPEED * s->dSin;
 }
 
 bool star_oob(struct Star * s) {
     // TODO: include stars that have become "lodged" in image
-    return s->x > 240 || s->y > 160 || s->x < 0 || s->y < 0;
+    return s->x > SCREEN_WIDTH || s->y > SCREEN_HEIGHT || s->x < 0 || s->y < 0;
 }
 
 struct Star * stars[20];
@@ -117,6 +118,20 @@ void clear_screen(unsigned short color) {
     }
 }
 
+void clear_edges(unsigned short color) {
+    unsigned short row, col;
+    for (col = 0; col < 4; col++) {
+        for (row = 0; row < SCREEN_HEIGHT; row++) {
+            m3_mem[row][col]= color;
+        }
+    }
+    for (col = SCREEN_WIDTH-4; col < SCREEN_WIDTH; col++) {
+        for (row = 0; row < SCREEN_HEIGHT; row++) {
+            m3_mem[row][col]= color;
+        }
+    }
+}
+
 void vbl_handler(void)
 {
     mmVBlank(); // This has to be called exactly at the beginning of VBL
@@ -143,18 +158,11 @@ void vbl_handler(void)
         }
 
         // Display star at new position
-        move_star(stars[i], 3);
+        move_star(stars[i]);
         m3_mem[stars[i]->y][stars[i]->x]= stars[i]->clr;
     }
 
-    // Print some debug information
-    int order, row, tick;
-    gbt_get_position(&order, &row, &tick);
-    iprintf("(%s) %d %2d %d | (%s) %d %2d %d\n",
-            gbt_is_playing() ? "ON" : "OFF",
-            order, row, tick,
-            mmActive() ? "ON" : "OFF",
-            mmGetPosition(), mmGetPositionRow(), mmGetPositionTick());
+    clear_edges(CLR_BLACK);
 }
 
 s32 RAND(s32 Value)
